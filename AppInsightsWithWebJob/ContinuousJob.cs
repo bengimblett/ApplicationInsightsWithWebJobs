@@ -25,6 +25,8 @@
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             logger.LogInformation($"{roleInstanceId} executing WebJob through BackgroundService() => ExecuteAsync()");
+
+
             try
             {
                 var counter = 0;
