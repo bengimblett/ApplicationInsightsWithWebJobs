@@ -22,9 +22,9 @@
             {
                 b.SetMinimumLevel(LogLevel.Debug);
                 b.AddConsole();
-                b.AddApplicationInsights(options =>
+                b.AddApplicationInsightsWebJobs(options =>
                 {
-                    var instrumentationKey = context.Configuration["AppInsightsInstrumentationKey"];
+                    var instrumentationKey = context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"];
                     Console.WriteLine($"Instrumentation key: {instrumentationKey}");
                     options.InstrumentationKey = instrumentationKey;
                 });
@@ -32,7 +32,7 @@
 
             builder.ConfigureServices((context, services) =>
             {
-                services.AddSingleton<ITelemetryInitializer, MyTelemetryInitializer>();
+                //services.AddSingleton<ITelemetryInitializer, MyTelemetryInitializer>();
                 services.AddSingleton<IHostedService, ContinuousJob>();
             });
 

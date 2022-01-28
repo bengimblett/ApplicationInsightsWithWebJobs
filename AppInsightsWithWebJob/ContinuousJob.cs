@@ -13,48 +13,48 @@
         readonly ILogger<ContinuousJob> logger;
         readonly TelemetryClient telemetryClient;
 
+        readonly string roleInstanceId;
+
         public ContinuousJob(ILogger<ContinuousJob> logger, TelemetryClient telemetryClient)
         {
             this.logger = logger;
             this.telemetryClient = telemetryClient;
+            this.roleInstanceId = System.Environment.GetEnvironmentVariable("RoleInstanceId");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            logger.LogInformation("executing WebJob");
+            logger.LogInformation($"{roleInstanceId} executing WebJob through BackgroundService() => ExecuteAsync()");
             try
             {
-                await Process(stoppingToken);
+                var counter = 0;
+                int msDelay = 500;
+  
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    try{
+                        await Task.Delay(msDelay, stoppingToken);
+                    }
+                    catch (TaskCanceledException){
+                        logger.LogWarning($"{roleInstanceId} >> Cancel requested in child task, need to clean up here now <<");
+                    }
+
+                    if ( counter % 5 == 0)
+                        logger.LogDebug($"{roleInstanceId} Counter is at {counter}", counter);
+
+                    counter++;
+                }
+                if ( stoppingToken.IsCancellationRequested ){
+                    logger.LogWarning($"{roleInstanceId} >> Cancel requested, Exited work loop, Cleaning up now, ExecuteAsync() exits <<");
+                }
             }
+
             catch (Exception exception)
             {
-                logger.LogCritical("[JOB] Continuous job threw an exceptions. {0}", exception);
+                logger.LogCritical($"{roleInstanceId} ExecuteAsync() Continuous job threw an exceptions. {0}", exception);
                 telemetryClient.TrackException(exception);
             }
         }
 
-        public override Task StopAsync(CancellationToken cancellationToken)
-        {
-            logger.LogDebug("StopAsync called");
-
-            return base.StopAsync(cancellationToken);
-        }
-
-        private async Task Process(CancellationToken stoppingToken)
-        {
-            var counter = 0;
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                Console.Write(".");
-                await Task.Delay(150, stoppingToken);
-                logger.LogDebug($"Counter is at {counter}", counter);
-
-                if (counter++ > 10)
-                {
-                    logger.LogWarning(">> About to throw <<");
-                    throw new InvalidOperationException("oy vay!");
-                }
-            }
-        }
     }
 }
